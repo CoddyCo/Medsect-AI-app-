@@ -13,11 +13,11 @@
 
 **MedSectAI** automatically segments unstructured medical abstracts into clear, standardized clinical sections — *Background, Objective, Methods, Results,* and *Conclusions* — using 6 purpose-trained NLP pipelines.
 
-[**Live Demo →**](https://medsectai.vercel.app) · [**API Docs →**](https://huggingface.co/spaces/YOUR_USERNAME/medsectai-api/docs) · [**Report a Bug**](issues) · [**Request a Feature**](issues)
+[**Live Demo →**](https://medsectai.vercel.app) · [**API Docs →**](https://huggingface.co/spaces/Mr-underscore/medsectai-api/docs) · [**Report a Bug**](issues) · [**Request a Feature**](issues)
 
 ---
 
-![MedSectAI Dashboard](https://raw.githubusercontent.com/YOUR_USERNAME/medsectai/master/docs/assets/dashboard-preview.png)
+![MedSectAI Dashboard](https://raw.githubusercontent.com/CoddyCo/Medsect-AI-app/main/docs/assets/dashboard-preview.png)
 
 </div>
 
@@ -28,7 +28,7 @@
 | Feature | Description |
 |---|---|
 | **6 NLP Pipelines** | From a Naive Bayes baseline to a state-of-the-art Quadra multimodal model |
-| **86.9% Accuracy** | Best-in-class performance with the Quadra model on 20,000 PubMed RCT papers |
+| **88% F1Score** | Best-in-class performance with the Quadra model on 20,000 PubMed RCT papers |
 | **Decoupled Architecture** | FastAPI backend on Hugging Face, static frontend on Vercel |
 | **Cloud Weight Fetching** | Model weights are fetched from AWS S3 on startup — zero weight bloat in the repo |
 | **Interactive Sandbox** | Paste any abstract and see it classified sentence-by-sentence in real-time |
@@ -111,8 +111,8 @@ Six progressively complex NLP classifiers were trained on the [PubMed 20k RCT da
 ### 1. Clone & set up the environment
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/medsectai.git
-cd medsectai
+git clone https://github.com/CoddyCo/Medsect-AI-app-.git
+cd Medsect-AI-app-
 
 # Create and activate virtual environment
 python -m venv mle
@@ -164,7 +164,7 @@ Open `http://localhost:3000` in your browser.
 
 ## 🌐 API Reference
 
-Base URL (production): `https://YOUR_USERNAME-medsectai-api.hf.space`
+Base URL (production): `https://CoddyCo-medsectai-api.hf.space`
 
 ### `GET /`
 
