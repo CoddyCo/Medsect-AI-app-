@@ -2,6 +2,7 @@ fastapi==0.111.0
 uvicorn[standard]==0.29.0
 python-multipart==0.0.9
 pydantic==2.7.1
+gradio>=4.0.0
 
 # ML
 scikit-learn==1.6.1

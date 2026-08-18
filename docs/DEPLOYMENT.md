@@ -35,7 +35,7 @@ git push -u origin master
    - **Owner:** Your HF username or organization
    - **Space name:** `medsectai-api` (or your preferred name)
    - **License:** MIT
-   - **SDK:** **Docker** ← important!
+   - **SDK:** **Gradio**
    - **Hardware:** CPU Basic (free tier) is fine for testing
    - **Visibility:** Public
 3. Click **Create Space**
