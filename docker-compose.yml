@@ -1,0 +1,23 @@
+services:
+  medsectai:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: medsectai-app
+    ports:
+      - "7860:7860"
+    volumes:
+      # Mount the app code so we don't have to rebuild to see Python changes
+      - ./app:/app/app
+      # Mount your trained model weight files here.
+      # Place .keras / .pkl files in ./saved_models/ and restart.
+      - ./saved_models:/app/saved_models
+      # Persistent TF-Hub cache — avoids re-downloading the USE model on every restart
+      - tfhub-cache:/app/.tfhub_modules
+    environment:
+      - SAVED_MODELS_DIR=/app/saved_models
+      - TFHUB_CACHE_DIR=/app/.tfhub_modules
+    restart: unless-stopped
+
+volumes:
+  tfhub-cache:
