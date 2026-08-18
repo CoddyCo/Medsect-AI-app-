@@ -1,0 +1,620 @@
+{% extends "base.html" %}
+
+{% block title %}MedSectAI — Clinical Abstract Section Classifier{% endblock %}
+
+{% block content %}
+<div class="app-shell">
+
+  <!-- ═══════════ NAVBAR ═══════════ -->
+  <nav class="navbar">
+    <div class="nav-brand">
+      <svg class="brand-logo" viewBox="0 0 24 24" width="22" height="22">
+        <path fill="currentColor" d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A2,2 0 0,1 14,6C14,6.74 13.57,7.39 12.95,7.71L15.42,12.63C16.85,12.18 18.25,12.7 19,13.9C19.75,15.1 19.5,16.7 18.4,17.6C17.3,18.5 15.7,18.5 14.7,17.6C13.97,16.92 13.68,15.93 13.9,15L11.44,10.08C10.02,10.53 8.61,10.03 7.86,8.82C7.11,7.62 7.37,6.03 8.47,5.13C9.57,4.23 11.17,4.23 12.17,5.13C12.38,5.32 12.5,5.66 12.5,6A2,2 0 0,1 12,4Z"/>
+      </svg>
+      <div class="brand-text">
+        <span class="brand-title">MedSect<span class="highlight">AI</span></span>
+        <span class="brand-tag">NLP Section Classifier</span>
+      </div>
+    </div>
+
+    <div class="nav-links">
+      <a href="#" class="nav-tab active" data-tab="view-analyze">
+        Analyze
+      </a>
+      <a href="#" class="nav-tab" data-tab="view-zoo">
+        Model Zoo
+      </a>
+      <div class="nav-underline"></div>
+    </div>
+
+    <div class="nav-meta">
+      <!-- FAKE GRADIO CONFIG TO BYPASS HUGGING FACE HEALTH CHECK -->
+      <script>window.gradio_config = {"version": "4.41.0"};</script>
+      <div class="nav-stat-pill">
+        <span class="stat-dot"></span>
+        <span>6 Models</span>
+        <span class="pill-divider">·</span>
+        <span class="stat-accent">86.9% Best F1</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ═══════════ MAIN ═══════════ -->
+  <main class="main-content">
+
+    <!-- ─── TAB A: ANALYZE ─── -->
+    <section class="spa-view active" id="view-analyze">
+      <div class="analyze-layout">
+
+        <!-- Left: Input Panel -->
+        <div class="input-panel">
+          <div class="panel-card">
+
+            <div class="panel-top-bar">
+              <h2 class="panel-heading">Abstract Input</h2>
+              <div class="model-toggle-group">
+                <span class="toggle-lbl">Best Model</span>
+                <label class="toggle-switch">
+                  <input type="checkbox" id="autorun-toggle" checked />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Sample quick-loaders -->
+            <div class="sample-row">
+              <span class="sample-label">Samples:</span>
+              {% for s in samples %}
+              <button class="sample-btn" data-text="{{ s.text | e }}">{{ s.label }}</button>
+              {% endfor %}
+            </div>
+
+            <!-- Textarea -->
+            <div class="editor-box">
+              <textarea
+                id="abstract-input"
+                class="abstract-textarea"
+                placeholder="Paste a medical abstract here. Each sentence on a new line, or as a paragraph — both work."
+                spellcheck="false"
+              ></textarea>
+              <div class="editor-footer">
+                <span id="char-count" class="char-count">0 characters</span>
+                <button id="clear-btn" class="clear-btn">Clear</button>
+              </div>
+            </div>
+
+            <!-- Model Selector (hidden when Auto-run is on) -->
+            <div id="model-select-container" style="display:none;">
+              <h4 class="selector-heading">Select Model</h4>
+              <div class="model-grid">
+                {% for m in models %}
+                <label class="model-card {% if loop.first %}selected{% endif %}" data-model-id="{{ m.id }}">
+                  <input type="radio" name="sandbox-model" value="{{ m.id }}" {% if loop.first %}checked{% endif %} hidden />
+                  <div class="model-card-top">
+                    <span class="model-name">{{ m.name }}</span>
+                    {% if m.is_mock %}
+                    <span class="badge badge-mock">MOCK</span>
+                    {% else %}
+                    <span class="badge badge-live">LIVE</span>
+                    {% endif %}
+                  </div>
+                  <span class="model-acc">{{ m.accuracy }}% accuracy</span>
+                </label>
+                {% endfor %}
+              </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-row">
+              <button class="btn btn-primary" id="predict-btn">
+                <span>▶</span> Run Classifier
+              </button>
+              <button class="btn btn-secondary" id="compare-btn">
+                <span>⇄</span> Compare All Models
+              </button>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Right: Results Panel -->
+        <div class="results-panel">
+
+          <!-- Empty state -->
+          <div class="results-empty" id="results-empty">
+            <div class="empty-icon">🔬</div>
+            <h3>Results will appear here</h3>
+            <p>Paste an abstract on the left and click "Run Classifier" to see the model's section predictions.</p>
+          </div>
+
+          <!-- Loading state -->
+          <div class="results-loader" id="sandbox-spinner" style="display:none;">
+            <div class="spinner"></div>
+            <span>Running inference…</span>
+          </div>
+
+          <!-- Results content -->
+          <div id="results-active" style="display:none;">
+
+            <!-- Single model result -->
+            <div id="single-results-view">
+              <div class="results-header">
+                <div class="results-header-left">
+                  <span class="result-model-badge" id="active-model-badge">Model 5 (Quadra)</span>
+                  <span class="badge badge-mock" id="active-mock-badge" style="display:none;">MOCK</span>
+                </div>
+                <span class="results-meta" id="active-meta-text"></span>
+              </div>
+
+              <!-- Grouped category blocks rendered here by JS -->
+              <div id="grouped-results-box" class="grouped-results"></div>
+            </div>
+
+            <!-- Compare result -->
+            <div id="compare-results-view" style="display:none;">
+              <div class="results-header">
+                <span class="result-model-badge">All Models Comparison</span>
+                <span class="results-meta">Consensus across 6 classifiers</span>
+              </div>
+
+              <div class="consensus-bar-row">
+                <span class="consensus-label" id="consensus-text">–</span>
+                <div class="consensus-track">
+                  <div class="consensus-fill" id="consensus-gauge-fill"></div>
+                </div>
+              </div>
+
+              <div class="table-scroll">
+                <table class="compare-table">
+                  <thead>
+                    <tr id="comparison-table-head"><th>Sentence</th></tr>
+                  </thead>
+                  <tbody id="comparison-table-body"></tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ─── TAB B: MODEL ZOO ─── -->
+    <section class="spa-view" id="view-zoo">
+      <div class="zoo-layout">
+
+        <div class="zoo-page-header">
+          <h2>Model Zoo</h2>
+          <p>All 6 trained classifiers — architectures, hyperparameters, and validation metrics.</p>
+        </div>
+
+        <!-- Summary comparison table -->
+        <div class="panel-card" style="margin-bottom: 2rem;">
+          <h3 class="panel-heading" style="margin-bottom: 1rem;">Performance Overview</h3>
+          <div class="table-scroll">
+            <table class="perf-table">
+              <thead>
+                <tr>
+                  <th>Model</th>
+                  <th>Architecture</th>
+                  <th>Accuracy</th>
+                  <th>Precision</th>
+                  <th>Recall</th>
+                  <th>F1</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for m in models %}
+                <tr {% if m.id == 'model_5' %}class="best-row"{% endif %}>
+                  <td><strong>{{ m.name }}</strong></td>
+                  <td class="arch-cell">{{ m.architecture | truncate(55) }}</td>
+                  <td class="metric-cell">{{ m.accuracy }}%</td>
+                  <td class="metric-cell">{{ m.precision }}%</td>
+                  <td class="metric-cell">{{ m.recall }}%</td>
+                  <td class="metric-cell {% if m.id == 'model_5' %}best-metric{% endif %}">{{ m.f1_score }}%</td>
+                  <td>
+                    {% if m.is_mock %}
+                    <span class="badge badge-mock">MOCK</span>
+                    {% else %}
+                    <span class="badge badge-live">LIVE</span>
+                    {% endif %}
+                  </td>
+                </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Per-model detail cards -->
+        <div class="zoo-cards">
+          {% for m in models %}
+          <div class="zoo-card" id="zoo-card-{{ m.id }}">
+
+            <!-- Card Header (clickable) -->
+            <div class="zoo-card-header" onclick="toggleZooCard('{{ m.id }}')">
+              <div class="zoo-card-title-group">
+                <span class="zoo-card-num">{% if loop.index == 6 %}🏆{% else %}{{ loop.index0 }}{% endif %}</span>
+                <div>
+                  <h3 class="zoo-card-name">{{ m.name }}</h3>
+                  <span class="zoo-card-arch">{{ m.architecture | truncate(80) }}</span>
+                </div>
+              </div>
+              <div class="zoo-card-right">
+                <span class="zoo-acc-badge">F1 {{ m.f1_score }}%</span>
+                <span class="zoo-chevron">▼</span>
+              </div>
+            </div>
+
+            <!-- Card Body -->
+            <div class="zoo-card-body">
+              <div class="zoo-detail-grid">
+
+                <!-- Left: Description & Params -->
+                <div>
+                  <p class="zoo-desc">{{ m.description }}</p>
+
+                  <div class="params-list">
+                    <div class="param-row">
+                      <span class="param-key">Epochs</span>
+                      <span class="param-val">{{ m.trained_epochs }}</span>
+                    </div>
+                    <div class="param-row">
+                      <span class="param-key">Training Time</span>
+                      <span class="param-val">{{ m.training_time }}</span>
+                    </div>
+                    <div class="param-row">
+                      <span class="param-key">Key Strength</span>
+                      <span class="param-val accent-val">{{ m.strength }}</span>
+                    </div>
+                    <div class="param-row">
+                      <span class="param-key">Weights</span>
+                      <span class="param-val code-val">saved_models/{{ m.id }}{% if m.id == 'model_0' %}.pkl{% else %}.keras{% endif %}</span>
+                    </div>
+                  </div>
+
+                  {% if m.id == 'model_5' %}
+                  <!-- Architecture diagram only for flagship model -->
+                  <div class="arch-diagram">
+                    <h4 class="zoo-section-title" style="margin: 1rem 0 0.5rem;">Multimodal Input Pipeline</h4>
+                    <div class="pipeline-flow">
+                      <div class="pipeline-inputs">
+                        <div class="p-node input-node"><span class="p-tag">Input 1</span><span class="p-title">Sentence Text</span><span class="p-detail">Token Emb (Custom)</span></div>
+                        <div class="p-node input-node"><span class="p-tag">Input 2</span><span class="p-title">Char Sequence</span><span class="p-detail">Char Emb + BiLSTM</span></div>
+                        <div class="p-node input-node"><span class="p-tag">Input 3</span><span class="p-title">Line Position</span><span class="p-detail">OHE (15-dim)</span></div>
+                        <div class="p-node input-node"><span class="p-tag">Input 4</span><span class="p-title">Total Lines</span><span class="p-detail">OHE (20-dim)</span></div>
+                      </div>
+                      <div class="pipeline-arrow">→</div>
+                      <div class="p-node fusion-node">
+                        <span class="p-tag accent">Concat → Dense (64)</span>
+                        <span class="p-title">Feature Fusion</span>
+                        <span class="p-detail">128-d · Dropout 0.2</span>
+                      </div>
+                      <div class="pipeline-arrow">→</div>
+                      <div class="p-node output-node">
+                        <span class="p-tag">Output</span>
+                        <span class="p-title">Softmax (5 classes)</span>
+                      </div>
+                    </div>
+                  </div>
+                  {% endif %}
+                </div>
+
+                <!-- Right: Training curve -->
+                <div class="zoo-chart-col">
+                  <h4 class="zoo-section-title">Validation Accuracy Curve</h4>
+                  <div class="svg-graph-box">
+                    <svg viewBox="0 0 300 150" class="graph-svg">
+                      <line x1="40" y1="20" x2="280" y2="20" stroke="rgba(255,255,255,0.05)" />
+                      <line x1="40" y1="50" x2="280" y2="50" stroke="rgba(255,255,255,0.05)" />
+                      <line x1="40" y1="80" x2="280" y2="80" stroke="rgba(255,255,255,0.05)" />
+                      <line x1="40" y1="110" x2="280" y2="110" stroke="rgba(255,255,255,0.05)" />
+                      <text x="32" y="24" class="graph-lbl" text-anchor="end">90%</text>
+                      <text x="32" y="54" class="graph-lbl" text-anchor="end">75%</text>
+                      <text x="32" y="84" class="graph-lbl" text-anchor="end">60%</text>
+                      <text x="32" y="114" class="graph-lbl" text-anchor="end">45%</text>
+                      <text x="40" y="138" class="graph-lbl" text-anchor="middle">Ep 1</text>
+                      <text x="100" y="138" class="graph-lbl" text-anchor="middle">Ep 2</text>
+                      <text x="160" y="138" class="graph-lbl" text-anchor="middle">Ep 3</text>
+                      <text x="220" y="138" class="graph-lbl" text-anchor="middle">Ep 4</text>
+                      <text x="280" y="138" class="graph-lbl" text-anchor="middle">Ep 5</text>
+                      {% if m.id == 'model_0' %}
+                      <path d="M 40,90 L 100,90 L 160,90 L 220,90 L 280,88" stroke="#3b82f6" stroke-width="2.5" fill="none" />
+                      <circle cx="280" cy="88" r="4" fill="#3b82f6"/>
+                      {% elif m.id == 'model_1' %}
+                      <path d="M 40,110 L 100,85 L 160,65 L 220,55 L 280,42" stroke="#06b6d4" stroke-width="2.5" fill="none" />
+                      <circle cx="280" cy="42" r="4" fill="#06b6d4"/>
+                      {% elif m.id == 'model_2' %}
+                      <path d="M 40,80 L 100,60 L 160,48 L 220,40 L 280,37" stroke="#8b5cf6" stroke-width="2.5" fill="none" />
+                      <circle cx="280" cy="37" r="4" fill="#8b5cf6"/>
+                      {% elif m.id == 'model_3' %}
+                      <path d="M 40,120 L 100,105 L 160,95 L 220,90 L 280,79" stroke="#ec4899" stroke-width="2.5" fill="none" />
+                      <circle cx="280" cy="79" r="4" fill="#ec4899"/>
+                      {% elif m.id == 'model_4' %}
+                      <path d="M 40,95 L 100,75 L 160,68 L 220,64 L 280,63" stroke="#f59e0b" stroke-width="2.5" fill="none" />
+                      <circle cx="280" cy="63" r="4" fill="#f59e0b"/>
+                      {% else %}
+                      <path d="M 40,65 L 100,45 L 160,32 L 220,27 L 280,25" stroke="#10b981" stroke-width="2.5" fill="none" />
+                      <circle cx="280" cy="25" r="4" fill="#10b981"/>
+                      {% endif %}
+                    </svg>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+/* ─── Element Refs ─── */
+const navTabs          = document.querySelectorAll('.nav-tab');
+const spaViews         = document.querySelectorAll('.spa-view');
+const navUnderline     = document.querySelector('.nav-underline');
+const autorunToggle    = document.getElementById('autorun-toggle');
+const modelContainer   = document.getElementById('model-select-container');
+const modelCards       = document.querySelectorAll('.model-card');
+const sampleBtns       = document.querySelectorAll('.sample-btn');
+const textarea         = document.getElementById('abstract-input');
+const charCount        = document.getElementById('char-count');
+const clearBtn         = document.getElementById('clear-btn');
+const predictBtn       = document.getElementById('predict-btn');
+const compareBtn       = document.getElementById('compare-btn');
+const resultsEmpty     = document.getElementById('results-empty');
+const resultsActive    = document.getElementById('results-active');
+const resultsSpinner   = document.getElementById('sandbox-spinner');
+const singleView       = document.getElementById('single-results-view');
+const compareView      = document.getElementById('compare-results-view');
+
+/* ─── Tab Navigation ─── */
+function positionUnderline(tab) {
+  navUnderline.style.width = tab.offsetWidth + 'px';
+  navUnderline.style.left  = tab.offsetLeft + 'px';
+}
+
+navTabs.forEach(tab => {
+  tab.addEventListener('click', e => {
+    e.preventDefault();
+    navTabs.forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    positionUnderline(tab);
+    const target = tab.dataset.tab;
+    spaViews.forEach(v => v.classList.toggle('active', v.id === target));
+  });
+});
+
+window.addEventListener('resize', () => {
+  const active = document.querySelector('.nav-tab.active');
+  if (active) positionUnderline(active);
+});
+setTimeout(() => {
+  const active = document.querySelector('.nav-tab.active');
+  if (active) positionUnderline(active);
+}, 200);
+
+/* ─── Model selector toggle ─── */
+autorunToggle.addEventListener('change', () => {
+  modelContainer.style.display = autorunToggle.checked ? 'none' : 'block';
+});
+
+modelCards.forEach(card => {
+  card.addEventListener('click', () => {
+    modelCards.forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+    card.querySelector('input[type=radio]').checked = true;
+  });
+});
+
+/* ─── Sample Abstract quick-loaders ─── */
+sampleBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    sampleBtns.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    textarea.value = btn.dataset.text;
+    updateCharCount();
+    textarea.focus();
+  });
+});
+
+/* ─── Char counter & clear ─── */
+function updateCharCount() {
+  const n = textarea.value.length;
+  charCount.textContent = n.toLocaleString() + ' chars';
+}
+textarea.addEventListener('input', updateCharCount);
+
+clearBtn.addEventListener('click', () => {
+  textarea.value = '';
+  updateCharCount();
+  sampleBtns.forEach(b => b.classList.remove('active'));
+  resultsActive.style.display = 'none';
+  resultsEmpty.style.display  = 'flex';
+  textarea.focus();
+});
+
+/* ─── Helpers ─── */
+function getModelId() {
+  if (autorunToggle.checked) return 'model_5';
+  const checked = document.querySelector('input[name="sandbox-model"]:checked');
+  return checked ? checked.value : 'model_5';
+}
+
+function showLoading() {
+  resultsEmpty.style.display   = 'none';
+  resultsActive.style.display  = 'none';
+  resultsSpinner.style.display = 'flex';
+}
+
+function hideLoading() {
+  resultsSpinner.style.display = 'none';
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ─── Render grouped single-model result ─── */
+const CLINICAL_ORDER = ['OBJECTIVE', 'BACKGROUND', 'METHODS', 'RESULTS', 'CONCLUSIONS'];
+
+function renderSingleResult(data) {
+  hideLoading();
+  singleView.style.display  = 'block';
+  compareView.style.display = 'none';
+  resultsActive.style.display = 'block';
+
+  document.getElementById('active-model-badge').textContent = data.model_name;
+  document.getElementById('active-mock-badge').style.display = data.is_mock ? 'inline-block' : 'none';
+  document.getElementById('active-meta-text').textContent =
+    data.predictions.length + ' sentence' + (data.predictions.length !== 1 ? 's' : '');
+
+  // Group by label
+  const groups = {};
+  data.predictions.forEach(p => {
+    if (!groups[p.label]) groups[p.label] = { color: p.color, items: [] };
+    groups[p.label].items.push(p);
+  });
+
+  // Sort in clinical order
+  const labels = Object.keys(groups).sort((a, b) => {
+    const ia = CLINICAL_ORDER.indexOf(a), ib = CLINICAL_ORDER.indexOf(b);
+    if (ia !== -1 && ib !== -1) return ia - ib;
+    return ia !== -1 ? -1 : ib !== -1 ? 1 : 0;
+  });
+
+  const container = document.getElementById('grouped-results-box');
+  container.innerHTML = labels.map(label => {
+    const g = groups[label];
+    const rows = g.items.map(s => `
+      <li class="cat-sentence">
+        <span class="cat-conf" style="color:${g.color}">${s.confidence}%</span>
+        <span>${escapeHtml(s.sentence)}</span>
+      </li>
+    `).join('');
+    return `
+      <div class="cat-group" style="border-left:3px solid ${g.color}">
+        <div class="cat-header" style="background:color-mix(in srgb,${g.color} 12%,transparent)">
+          <span class="cat-label">${label}</span>
+          <span class="cat-count">${g.items.length} sentence${g.items.length !== 1 ? 's' : ''}</span>
+        </div>
+        <ul class="cat-list">${rows}</ul>
+      </div>
+    `;
+  }).join('');
+}
+
+/* ─── Render compare table ─── */
+function renderCompareGrid(data) {
+  hideLoading();
+  singleView.style.display    = 'none';
+  compareView.style.display   = 'block';
+  resultsActive.style.display = 'block';
+
+  const modelIds    = Object.keys(data);
+  const first       = data[modelIds[0]];
+  const numSentences = first.predictions.length;
+
+  // Table headers
+  document.getElementById('comparison-table-head').innerHTML =
+    '<th>Sentence</th>' + modelIds.map(mid => {
+      const m = data[mid];
+      return `<th>${m.model_name}${m.is_mock ? ' <span class="badge badge-mock">MOCK</span>' : ''}</th>`;
+    }).join('');
+
+  // Rows
+  let agreements = 0;
+  document.getElementById('comparison-table-body').innerHTML =
+    Array.from({ length: numSentences }).map((_, i) => {
+      const row = modelIds.map(mid => data[mid].predictions[i]);
+      const labels = row.map(p => p.label);
+      const agreed = new Set(labels).size === 1;
+      if (agreed) agreements++;
+      return `
+        <tr class="${agreed ? 'row-agree' : 'row-conflict'}">
+          <td class="td-sentence">
+            <span class="s-idx">${i + 1}</span>
+            ${escapeHtml(row[0].sentence)}
+          </td>
+          ${row.map(p => `
+            <td class="td-pred">
+              <span class="pred-label" style="--lc:${p.color}">${p.label}</span>
+              <span class="pred-conf">${p.confidence}%</span>
+            </td>
+          `).join('')}
+        </tr>
+      `;
+    }).join('');
+
+  // Consensus
+  const rate = Math.round((agreements / numSentences) * 100);
+  document.getElementById('consensus-gauge-fill').style.width = rate + '%';
+  document.getElementById('consensus-gauge-fill').style.background =
+    rate > 80 ? '#10b981' : rate > 50 ? '#f59e0b' : '#ef4444';
+  document.getElementById('consensus-text').textContent =
+    `Model consensus: ${rate}% (${agreements}/${numSentences} sentences agreed)`;
+}
+
+/* ─── API calls ─── */
+predictBtn.addEventListener('click', async () => {
+  const text = textarea.value.trim();
+  if (!text) { textarea.focus(); return; }
+  showLoading();
+  try {
+    const res = await fetch('/predict', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, model_id: getModelId() }),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    renderSingleResult(await res.json());
+  } catch (err) {
+    alert('Prediction failed: ' + err.message);
+    hideLoading();
+  }
+});
+
+compareBtn.addEventListener('click', async () => {
+  const text = textarea.value.trim();
+  if (!text) { textarea.focus(); return; }
+  showLoading();
+  try {
+    const res = await fetch('/compare', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    renderCompareGrid(await res.json());
+  } catch (err) {
+    alert('Comparison failed: ' + err.message);
+    hideLoading();
+  }
+});
+
+/* ─── Model Zoo Accordion ─── */
+function toggleZooCard(id) {
+  const card = document.getElementById('zoo-card-' + id);
+  const expanded = card.classList.contains('expanded');
+  document.querySelectorAll('.zoo-card').forEach(c => c.classList.remove('expanded'));
+  if (!expanded) {
+    card.classList.add('expanded');
+    setTimeout(() => card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 200);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const first = document.querySelector('.zoo-card');
+  if (first) first.classList.add('expanded');
+});
+</script>
+{% endblock %}
