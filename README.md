@@ -8,12 +8,10 @@
 [![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![TensorFlow](https://img.shields.io/badge/TensorFlow-2.15-FF6F00?style=for-the-badge&logo=tensorflow&logoColor=white)](https://tensorflow.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
-[![Vercel](https://img.shields.io/badge/Frontend-Vercel-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com)
-[![Hugging Face Spaces](https://img.shields.io/badge/Backend-HuggingFace-FFD21E?style=for-the-badge&logo=huggingface&logoColor=black)](https://huggingface.co/spaces)
 
 **MedSectAI** automatically segments unstructured medical abstracts into clear, standardized clinical sections — *Background, Objective, Methods, Results,* and *Conclusions* — using 6 purpose-trained NLP pipelines.
 
-[**Live Demo →**](https://medsectai.vercel.app) · [**API Docs →**](https://huggingface.co/spaces/Mr-underscore/medsectai-api/docs) · [**Report a Bug**](issues) · [**Request a Feature**](issues)
+[**Watch Demo Video 🎥**](#) · [**Report a Bug**](issues) · [**Request a Feature**](issues)
 
 ---
 
@@ -29,7 +27,7 @@
 |---|---|
 | **6 NLP Pipelines** | From a Naive Bayes baseline to a state-of-the-art Quadra multimodal model |
 | **88% F1Score** | Best-in-class performance with the Quadra model on 20,000 PubMed RCT papers |
-| **Decoupled Architecture** | FastAPI backend on Hugging Face, static frontend on Vercel |
+| **Decoupled Architecture** | Headless FastAPI backend and lightweight static HTML/JS frontend |
 | **Cloud Weight Fetching** | Model weights are fetched from AWS S3 on startup — zero weight bloat in the repo |
 | **Interactive Sandbox** | Paste any abstract and see it classified sentence-by-sentence in real-time |
 | **Multi-Model Comparison** | Run all 6 classifiers simultaneously and inspect consensus agreement |
@@ -44,18 +42,18 @@
 │                     User's Browser                      │
 │                                                         │
 │   ┌───────────────────────────────────────────────┐    │
-│   │         Frontend (Vercel CDN)                  │    │
+│   │         Frontend (Static SPA)                  │    │
 │   │    HTML + Vanilla CSS + JavaScript            │    │
 │   │    ✦ Dashboard   ✦ Sandbox   ✦ Model Zoo      │    │
 │   └─────────────────────┬─────────────────────────┘    │
 └─────────────────────────┼───────────────────────────────┘
-                          │  HTTPS JSON (REST API)
+                          │  HTTP JSON (REST API)
                           ▼
 ┌─────────────────────────────────────────────────────────┐
-│          Backend (Hugging Face Docker Space)            │
+│                 Backend (FastAPI)                       │
 │                                                         │
 │   ┌───────────────────────────────────────────────┐    │
-│   │         FastAPI (Uvicorn, Port 7860)           │    │
+│   │         FastAPI (Uvicorn, Port 8001)           │    │
 │   │  POST /predict    POST /compare    GET /models │    │
 │   └───────────────────┬───────────────────────────┘    │
 │                       │                                 │
@@ -164,7 +162,7 @@ Open `http://localhost:3000` in your browser.
 
 ## 🌐 API Reference
 
-Base URL (production): `https://CoddyCo-medsectai-api.hf.space`
+Base URL (local): `http://127.0.0.1:8001`
 
 ### `GET /`
 
@@ -253,7 +251,7 @@ Returns metadata for all registered models.
 
 ## ☁️ Deployment
 
-See [`docs/DEPLOYMENT.md`](docs/DEPLOYMENT.md) for the complete, step-by-step deployment guide to Hugging Face Spaces (backend) and Vercel (frontend).
+The architecture is fully decoupled, meaning you can deploy the backend to any Docker-compatible hosting provider (Render, AWS, DigitalOcean) and the frontend to any static CDN (Vercel, Netlify, GitHub Pages).
 
 ---
 
