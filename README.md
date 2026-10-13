@@ -14,12 +14,6 @@
 
 ### 🌐 [**Click Here to Open Live Demo (Render)**](https://medsect-ai-app-1.onrender.com/)
 
-[**Live Demo**](https://medsect-ai-app-1.onrender.com/) · [**Watch Demo Video 🎥**](#) · [**Report a Bug**](issues) · [**Request a Feature**](issues)
-
----
-
-![MedSectAI Dashboard](https://raw.githubusercontent.com/CoddyCo/Medsect-AI-app/main/docs/assets/dashboard-preview.png)
-
 </div>
 
 ---
