@@ -7,11 +7,14 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.111.0-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![Python](https://img.shields.io/badge/Python-3.11-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
 [![TensorFlow](https://img.shields.io/badge/TensorFlow-2.15-FF6F00?style=for-the-badge&logo=tensorflow&logoColor=white)](https://tensorflow.org)
+[![Live Demo](https://img.shields.io/badge/Live_Demo-Render-46E3B7?style=for-the-badge&logo=render&logoColor=white)](https://medsect-ai-app-1.onrender.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](LICENSE)
 
 **MedSectAI** automatically segments unstructured medical abstracts into clear, standardized clinical sections — *Background, Objective, Methods, Results,* and *Conclusions* — using 6 purpose-trained NLP pipelines.
 
-[**Watch Demo Video 🎥**](#) · [**Report a Bug**](issues) · [**Request a Feature**](issues)
+### 🌐 [**Click Here to Open Live Demo (Render)**](https://medsect-ai-app-1.onrender.com/)
+
+[**Live Demo**](https://medsect-ai-app-1.onrender.com/) · [**Watch Demo Video 🎥**](#) · [**Report a Bug**](issues) · [**Request a Feature**](issues)
 
 ---
 
@@ -250,6 +253,8 @@ Returns metadata for all registered models.
 ---
 
 ## ☁️ Deployment
+
+- 🚀 **Live Demo:** [https://medsect-ai-app-1.onrender.com/](https://medsect-ai-app-1.onrender.com/)
 
 The architecture is fully decoupled, meaning you can deploy the backend to any Docker-compatible hosting provider (Render, AWS, DigitalOcean) and the frontend to any static CDN (Vercel, Netlify, GitHub Pages).
 
