@@ -7,6 +7,7 @@ import logging
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 
 from .model_registry import registry
@@ -27,9 +28,9 @@ async def startup_event():
     logger.info("Initializing application startup sequence...")
     # Point 1: Fetch weights from S3
     download_weights_from_s3()
-@app.get("/")
-async def index():
-    return {"status": "online", "message": "MedSectAI API is running."}
+@app.get("/health")
+async def health():
+    return {"status": "online", "message": "MedSectAI API is running.", "models": len(registry.all())}
 
 app.add_middleware(
     CORSMiddleware,
@@ -110,3 +111,13 @@ async def debug():
         
     debug_info["models"] = registry.info()
     return debug_info
+
+
+# ── Mount static frontend (if directory present) ───────────────────────────
+frontend_dir = Path(__file__).resolve().parent.parent / "frontend"
+if frontend_dir.exists():
+    app.mount("/", StaticFiles(directory=str(frontend_dir), html=True), name="frontend")
+else:
+    @app.get("/")
+    async def index():
+        return {"status": "online", "message": "MedSectAI API is running. Mount frontend to view UI."}

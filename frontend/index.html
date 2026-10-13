@@ -1095,13 +1095,16 @@ function renderCompareGrid(data) {
     `Model consensus: ${rate}% (${agreements}/${numSentences} sentences agreed)`;
 }
 
-/* ─── API calls ─── */
+/* ─── API Base & calls ─── */
+// Auto-detects same origin (Render/Docker) or fallback for remote frontend hosting (Vercel)
+const API_BASE = window.API_BASE_URL || (window.location.protocol === 'file:' ? 'http://127.0.0.1:8000' : '');
+
 predictBtn.addEventListener('click', async () => {
   const text = textarea.value.trim();
   if (!text) { textarea.focus(); return; }
   showLoading();
   try {
-    const res = await fetch('/predict', {
+    const res = await fetch(`${API_BASE}/predict`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text, model_id: getModelId() }),
@@ -1119,7 +1122,7 @@ compareBtn.addEventListener('click', async () => {
   if (!text) { textarea.focus(); return; }
   showLoading();
   try {
-    const res = await fetch('/compare', {
+    const res = await fetch(`${API_BASE}/compare`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text }),

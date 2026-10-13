@@ -6,6 +6,7 @@ from typing import Optional
 
 
 class PredictRequest(BaseModel):
+    model_config = {"protected_namespaces": ()}
     text: str
     model_id: str = "model_0"
 
@@ -18,6 +19,7 @@ class SentencePrediction(BaseModel):
 
 
 class PredictResponse(BaseModel):
+    model_config = {"protected_namespaces": ()}
     model_id: str
     model_name: str
     predictions: list[SentencePrediction]

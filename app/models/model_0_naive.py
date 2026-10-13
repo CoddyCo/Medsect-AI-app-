@@ -39,7 +39,8 @@ class Model0Naive(BaseMedModel):
         self.load()
 
     def load(self) -> bool:
-        if WEIGHTS_PATH.exists():
+        force_mock = os.getenv("FORCE_MOCK", "false").lower() in ("true", "1")
+        if not force_mock and WEIGHTS_PATH.exists() and WEIGHTS_PATH.stat().st_size > 50000:
             self._is_mock = False
             logger.info(f"{self.MODEL_ID}: Found weights, deferring load until first prediction.")
             return True
