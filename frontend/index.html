@@ -875,19 +875,8 @@ Sotatercept significantly improved 6-minute walk distance and clinical outcomes 
   
 <script>
 
-const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-    ? 'http://127.0.0.1:8001' 
-    : 'https://replace-with-your-huggingface-space-url.hf.space';
-
-// Monkey patch fetch to use the absolute backend URL
-const originalFetch = window.fetch;
-window.fetch = function() {
-    let [resource, config] = arguments;
-    if(typeof resource === 'string' && resource.startsWith('/')) {
-        resource = API_BASE + resource;
-    }
-    return originalFetch(resource, config);
-};
+// API_BASE: empty string = same-origin (Render/Docker all-in-one deployment)
+// For split-deploy (Vercel frontend + separate backend), set window.API_BASE_URL before this script
 
 /* ─── Element Refs ─── */
 const navTabs          = document.querySelectorAll('.nav-tab');
@@ -1096,8 +1085,10 @@ function renderCompareGrid(data) {
 }
 
 /* ─── API Base & calls ─── */
-// Auto-detects same origin (Render/Docker) or fallback for remote frontend hosting (Vercel)
-const API_BASE = window.API_BASE_URL || (window.location.protocol === 'file:' ? 'http://127.0.0.1:8000' : '');
+// Same-origin on Render (Docker); override window.API_BASE_URL for split deployments
+const API_BASE = (typeof window.API_BASE_URL !== 'undefined' && window.API_BASE_URL)
+  ? window.API_BASE_URL
+  : (window.location.protocol === 'file:' ? 'http://127.0.0.1:8000' : '');
 
 predictBtn.addEventListener('click', async () => {
   const text = textarea.value.trim();

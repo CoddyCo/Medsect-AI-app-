@@ -7,7 +7,6 @@ import logging
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from pathlib import Path
 
 from .model_registry import registry
@@ -113,11 +112,20 @@ async def debug():
     return debug_info
 
 
-# ── Mount static frontend (if directory present) ───────────────────────────
+# ── Serve frontend explicitly (avoids static mount conflicting with API routes) ──
+from fastapi.responses import FileResponse, HTMLResponse
+
 frontend_dir = Path(__file__).resolve().parent.parent / "frontend"
+
 if frontend_dir.exists():
-    app.mount("/", StaticFiles(directory=str(frontend_dir), html=True), name="frontend")
+    @app.get("/")
+    async def serve_root():
+        return FileResponse(str(frontend_dir / "index.html"))
+
+    @app.get("/style.css")
+    async def serve_css():
+        return FileResponse(str(frontend_dir / "style.css"), media_type="text/css")
 else:
     @app.get("/")
     async def index():
-        return {"status": "online", "message": "MedSectAI API is running. Mount frontend to view UI."}
+        return {"status": "online", "message": "MedSectAI API — no frontend found."}
